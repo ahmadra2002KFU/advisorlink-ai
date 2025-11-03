@@ -1,0 +1,79 @@
+import { User } from '@supabase/supabase-js';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { MessageSquare, Users, Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+
+interface AdvisorDashboardProps {
+  user: User;
+}
+
+const AdvisorDashboard = ({ user }: AdvisorDashboardProps) => {
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold text-foreground mb-2">Advisor Dashboard</h2>
+        <p className="text-muted-foreground">Manage your students and conversations</p>
+      </div>
+
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle>Active Chats</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-primary">0</div>
+            <p className="text-sm text-muted-foreground mt-1">ongoing conversations</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-secondary/10 rounded-lg">
+                <Users className="h-5 w-5 text-secondary" />
+              </div>
+              <CardTitle>My Students</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-secondary">0</div>
+            <p className="text-sm text-muted-foreground mt-1">assigned students</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-accent/10 rounded-lg">
+                <Calendar className="h-5 w-5 text-accent" />
+              </div>
+              <CardTitle>Availability</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Button variant="outline" className="w-full">Set Schedule</Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Conversations</CardTitle>
+          <CardDescription>Your latest student interactions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground">
+            No recent conversations
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+export default AdvisorDashboard;
