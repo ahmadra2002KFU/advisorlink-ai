@@ -1,4 +1,5 @@
 import { User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, User as UserIcon, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ interface StudentDashboardProps {
 }
 
 const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
+  const navigate = useNavigate();
   const t = translations[language];
 
   return (
@@ -31,7 +33,7 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
             <CardDescription>View your chat history</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full">{t.viewChats}</Button>
+            <Button className="w-full" onClick={() => navigate('/chat')}>{t.viewChats}</Button>
           </CardContent>
         </Card>
 
@@ -61,7 +63,7 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
             <CardDescription>Get instant help</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">{t.askAI}</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/chat')}>{t.askAI}</Button>
           </CardContent>
         </Card>
       </div>

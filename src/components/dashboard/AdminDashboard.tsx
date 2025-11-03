@@ -1,5 +1,7 @@
 import { User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Users, MessageSquare, TrendingUp, Shield } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
 
@@ -9,6 +11,7 @@ interface AdminDashboardProps {
 }
 
 const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
+  const navigate = useNavigate();
   const t = translations[language];
 
   return (
@@ -77,31 +80,21 @@ const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
         </Card>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Recent Activity</CardTitle>
-            <CardDescription>Latest system events</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="text-center py-8 text-muted-foreground">
-              No recent activity
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>User Management</CardTitle>
-            <CardDescription>Quick actions</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="text-center py-8 text-muted-foreground">
-              Management tools coming soon
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>System Management</CardTitle>
+          <CardDescription>Access admin tools</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Button 
+            variant="default" 
+            className="w-full"
+            onClick={() => navigate('/admin-panel')}
+          >
+            {language === 'en' ? 'Open Admin Panel' : 'فتح لوحة الإدارة'}
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };

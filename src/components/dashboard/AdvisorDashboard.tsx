@@ -1,4 +1,5 @@
 import { User } from '@supabase/supabase-js';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,6 +11,7 @@ interface AdvisorDashboardProps {
 }
 
 const AdvisorDashboard = ({ user, language }: AdvisorDashboardProps) => {
+  const navigate = useNavigate();
   const t = translations[language];
 
   return (
@@ -71,6 +73,13 @@ const AdvisorDashboard = ({ user, language }: AdvisorDashboardProps) => {
           <CardDescription>Your latest student interactions</CardDescription>
         </CardHeader>
         <CardContent>
+          <Button 
+            variant="default" 
+            className="w-full mb-4"
+            onClick={() => navigate('/advisor-chat')}
+          >
+            {language === 'en' ? 'View All Conversations' : 'عرض جميع المحادثات'}
+          </Button>
           <div className="text-center py-8 text-muted-foreground">
             No recent conversations
           </div>
