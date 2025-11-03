@@ -2,16 +2,20 @@ import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, Users, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { translations, Language } from '@/lib/i18n';
 
 interface AdvisorDashboardProps {
   user: User;
+  language: Language;
 }
 
-const AdvisorDashboard = ({ user }: AdvisorDashboardProps) => {
+const AdvisorDashboard = ({ user, language }: AdvisorDashboardProps) => {
+  const t = translations[language];
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-2">Advisor Dashboard</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-2">{t.advisorDashboard}</h2>
         <p className="text-muted-foreground">Manage your students and conversations</p>
       </div>
 
@@ -22,7 +26,7 @@ const AdvisorDashboard = ({ user }: AdvisorDashboardProps) => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <MessageSquare className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle>Active Chats</CardTitle>
+              <CardTitle>{t.activeChats}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
@@ -37,7 +41,7 @@ const AdvisorDashboard = ({ user }: AdvisorDashboardProps) => {
               <div className="p-2 bg-secondary/10 rounded-lg">
                 <Users className="h-5 w-5 text-secondary" />
               </div>
-              <CardTitle>My Students</CardTitle>
+              <CardTitle>{t.myStudents}</CardTitle>
             </div>
           </CardHeader>
           <CardContent>

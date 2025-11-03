@@ -2,16 +2,20 @@ import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { MessageSquare, User as UserIcon, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { translations, Language } from '@/lib/i18n';
 
 interface StudentDashboardProps {
   user: User;
+  language: Language;
 }
 
-const StudentDashboard = ({ user }: StudentDashboardProps) => {
+const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
+  const t = translations[language];
+
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-3xl font-bold text-foreground mb-2">Welcome Back, Student!</h2>
+        <h2 className="text-3xl font-bold text-foreground mb-2">{t.welcomeBack}, Student!</h2>
         <p className="text-muted-foreground">Access your advisor and get personalized guidance</p>
       </div>
 
@@ -22,12 +26,12 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
               <div className="p-2 bg-primary/10 rounded-lg">
                 <MessageSquare className="h-5 w-5 text-primary" />
               </div>
-              <CardTitle>My Conversations</CardTitle>
+              <CardTitle>{t.myConversations}</CardTitle>
             </div>
             <CardDescription>View your chat history</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button className="w-full">View Chats</Button>
+            <Button className="w-full">{t.viewChats}</Button>
           </CardContent>
         </Card>
 
@@ -37,12 +41,12 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
               <div className="p-2 bg-secondary/10 rounded-lg">
                 <UserIcon className="h-5 w-5 text-secondary" />
               </div>
-              <CardTitle>My Advisor</CardTitle>
+              <CardTitle>{t.myAdvisor}</CardTitle>
             </div>
             <CardDescription>Connect with your advisor</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="secondary" className="w-full">Contact Advisor</Button>
+            <Button variant="secondary" className="w-full">{t.contactAdvisor}</Button>
           </CardContent>
         </Card>
 
@@ -52,33 +56,33 @@ const StudentDashboard = ({ user }: StudentDashboardProps) => {
               <div className="p-2 bg-accent/10 rounded-lg">
                 <Bot className="h-5 w-5 text-accent" />
               </div>
-              <CardTitle>AI Assistant</CardTitle>
+              <CardTitle>{t.aiAssistant}</CardTitle>
             </div>
             <CardDescription>Get instant help</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full">Ask AI</Button>
+            <Button variant="outline" className="w-full">{t.askAI}</Button>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Student Information</CardTitle>
+          <CardTitle>{t.studentInfo}</CardTitle>
           <CardDescription>Your personal details</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Email:</span>
+              <span className="text-muted-foreground">{t.email}:</span>
               <span className="font-medium">{user.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Student ID:</span>
+              <span className="text-muted-foreground">{t.studentId}:</span>
               <span className="font-medium">{user.user_metadata?.student_id || 'Not set'}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Full Name:</span>
+              <span className="text-muted-foreground">{t.fullName}:</span>
               <span className="font-medium">{user.user_metadata?.full_name || 'Not set'}</span>
             </div>
           </div>

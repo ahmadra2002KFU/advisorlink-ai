@@ -1,12 +1,16 @@
 import { User } from '@supabase/supabase-js';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, MessageSquare, TrendingUp, Shield } from 'lucide-react';
+import { translations, Language } from '@/lib/i18n';
 
 interface AdminDashboardProps {
   user: User;
+  language: Language;
 }
 
-const AdminDashboard = ({ user }: AdminDashboardProps) => {
+const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
+  const t = translations[language];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
@@ -14,7 +18,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
           <Shield className="h-6 w-6 text-primary" />
         </div>
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Admin Dashboard</h2>
+          <h2 className="text-3xl font-bold text-foreground">{t.adminDashboard}</h2>
           <p className="text-muted-foreground">System overview and management</p>
         </div>
       </div>
@@ -23,7 +27,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
         <Card className="hover:shadow-elevated transition-shadow">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.totalUsers}</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
@@ -36,7 +40,7 @@ const AdminDashboard = ({ user }: AdminDashboardProps) => {
         <Card className="hover:shadow-elevated transition-shadow">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Total Chats</CardTitle>
+              <CardTitle className="text-sm font-medium">{t.totalChats}</CardTitle>
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
