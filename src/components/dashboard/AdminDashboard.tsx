@@ -1,9 +1,19 @@
-import { User } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { adminApi } from '@/api';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, MessageSquare, TrendingUp, Shield } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Users, MessageSquare, TrendingUp, Shield, Bot } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
+import { useToast } from '@/hooks/use-toast';
+
+interface User {
+  id: number;
+  email: string;
+  fullName: string;
+  userType: string;
+}
 
 interface AdminDashboardProps {
   user: User;
@@ -13,6 +23,28 @@ interface AdminDashboardProps {
 const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
   const navigate = useNavigate();
   const t = translations[language];
+  const { toast } = useToast();
+
+  // Fetch admin stats
+  const { data: stats, isLoading, error } = useQuery({
+    queryKey: ['adminStats'],
+    queryFn: adminApi.getStats,
+    onError: (err: any) => {
+      toast({
+        title: 'Error',
+        description: err.message || 'Failed to fetch admin statistics',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <p className="text-destructive">Failed to load admin dashboard</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -27,19 +59,47 @@ const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {/* Total Students */}
         <Card className="hover:shadow-elevated transition-shadow">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">{t.totalUsers}</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Students</CardTitle>
               <Users className="h-4 w-4 text-muted-foreground" />
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-primary">0</div>
-            <p className="text-xs text-muted-foreground mt-1">registered users</p>
+            {isLoading ? (
+              <Skeleton className="h-10 w-20" />
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-primary">{stats?.total_students || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">registered students</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
+        {/* Total Advisors */}
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">Total Advisors</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-10 w-20" />
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-secondary">{stats?.total_advisors || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">active advisors</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Total Conversations */}
         <Card className="hover:shadow-elevated transition-shadow">
           <CardHeader>
             <div className="flex items-center justify-between">
@@ -48,21 +108,71 @@ const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-secondary">0</div>
-            <p className="text-xs text-muted-foreground mt-1">conversations</p>
+            {isLoading ? (
+              <Skeleton className="h-10 w-20" />
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-accent">{stats?.total_conversations || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stats?.active_conversations || 0} active
+                </p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* AI Chat Sessions */}
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm font-medium">AI Chats</CardTitle>
+              <Bot className="h-4 w-4 text-muted-foreground" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-10 w-20" />
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-green-600">{stats?.total_ai_chats || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">AI conversations</p>
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Additional Stats Row */}
+      <div className="grid gap-6 md:grid-cols-3">
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <CardTitle className="text-sm font-medium">Total Messages</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{stats?.total_messages || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">messages exchanged</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
         <Card className="hover:shadow-elevated transition-shadow">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-medium">Active Advisors</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </div>
+            <CardTitle className="text-sm font-medium">Active Conversations</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-accent">0</div>
-            <p className="text-xs text-muted-foreground mt-1">available now</p>
+            {isLoading ? (
+              <Skeleton className="h-8 w-16" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-primary">{stats?.active_conversations || 0}</div>
+                <p className="text-xs text-muted-foreground mt-1">ongoing chats</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -74,8 +184,8 @@ const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-green-600">100%</div>
-            <p className="text-xs text-muted-foreground mt-1">all systems operational</p>
+            <div className="text-2xl font-bold text-green-600">Operational</div>
+            <p className="text-xs text-muted-foreground mt-1">all systems running</p>
           </CardContent>
         </Card>
       </div>
@@ -83,11 +193,11 @@ const AdminDashboard = ({ user, language }: AdminDashboardProps) => {
       <Card>
         <CardHeader>
           <CardTitle>System Management</CardTitle>
-          <CardDescription>Access admin tools</CardDescription>
+          <CardDescription>Access comprehensive admin tools</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             className="w-full"
             onClick={() => navigate('/admin-panel')}
           >

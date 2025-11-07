@@ -1,15 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { ArrowLeft, Send, Loader2, Moon, Sun, Languages } from 'lucide-react';
+import { ArrowLeft, Send, Loader2, Moon, Sun, Languages, Sparkles } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
+import { aiApi, type ChatMessage } from '@/api';
 
 interface Message {
-  role: 'user' | 'assistant';
+  role: 'user' | 'model';
   content: string;
 }
 
@@ -56,25 +56,28 @@ const Chat = () => {
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage: Message = { role: 'user', content: input.trim() };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setLoading(true);
 
     try {
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: { 
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
-        }
-      });
+      // Convert messages to ChatMessage format for API
+      const chatHistory: ChatMessage[] = messages.map(m => ({
+        role: m.role,
+        content: m.content
+      }));
 
-      if (error) throw error;
+      // Call AI API
+      const response = await aiApi.chat(userMessage.content, chatHistory);
 
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.message
+      // Add AI response to messages
+      const aiMessage: Message = {
+        role: 'model',
+        content: response.response
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages(prev => [...prev, aiMessage]);
     } catch (error: any) {
       console.error('Chat error:', error);
       toast({
@@ -82,6 +85,8 @@ const Chat = () => {
         description: language === 'en' ? 'Failed to get response from AI' : 'فشل في الحصول على رد من الذكاء الاصطناعي',
         variant: 'destructive',
       });
+      // Remove the user message if there was an error
+      setMessages(messages);
     } finally {
       setLoading(false);
     }
@@ -167,6 +172,10 @@ const Chat = () => {
                 <Send className="h-4 w-4" />
               </Button>
             </form>
+            <div className="flex items-center justify-center gap-1 mt-2 text-xs text-muted-foreground">
+              <Sparkles className="h-3 w-3" />
+              <span>Powered by Gemini AI</span>
+            </div>
           </div>
         </Card>
       </main>

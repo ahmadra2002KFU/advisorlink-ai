@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { useToast } from '@/hooks/use-toast';
-import { User } from '@supabase/supabase-js';
+import { useAuth } from '@/context/AuthContext';
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
 import AdvisorDashboard from '@/components/dashboard/AdvisorDashboard';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
@@ -12,10 +10,7 @@ import { translations, Language } from '@/lib/i18n';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, logout } = useAuth();
   const [isDark, setIsDark] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
 
@@ -32,6 +27,13 @@ const Dashboard = () => {
     document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
   }, []);
 
+  // Redirect to auth if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [loading, user, navigate]);
+
   const toggleTheme = () => {
     setIsDark(!isDark);
     document.documentElement.classList.toggle('dark');
@@ -45,43 +47,8 @@ const Dashboard = () => {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        navigate('/auth');
-        return;
-      }
-
-      setUser(session.user);
-
-      // Get user role
-      const { data: roleData } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', session.user.id)
-        .single();
-
-      setUserRole(roleData?.role || 'student');
-    } catch (error: any) {
-      console.error('Auth check error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to verify authentication",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
+  const handleLogout = () => {
+    logout();
     navigate('/auth');
   };
 
@@ -91,6 +58,10 @@ const Dashboard = () => {
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
@@ -113,9 +84,9 @@ const Dashboard = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {userRole === 'admin' && <AdminDashboard user={user!} language={language} />}
-        {userRole === 'advisor' && <AdvisorDashboard user={user!} language={language} />}
-        {(userRole === 'student' || !userRole) && <StudentDashboard user={user!} language={language} />}
+        {user.userType === 'admin' && <AdminDashboard user={user} language={language} />}
+        {user.userType === 'advisor' && <AdvisorDashboard language={language} />}
+        {user.userType === 'student' && <StudentDashboard user={user} language={language} />}
       </main>
     </div>
   );

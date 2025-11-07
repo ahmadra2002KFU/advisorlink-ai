@@ -1,40 +1,30 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowLeft, Users, MessageSquare, Moon, Sun, Languages, Shield } from 'lucide-react';
+import { ArrowLeft, Moon, Sun, Languages, Shield } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
-
-interface ConversationWithDetails {
-  id: string;
-  created_at: string;
-  status: string;
-  student_profile: {
-    full_name: string;
-    student_id: string;
-  };
-  advisor_profile: {
-    full_name: string;
-  };
-  message_count: number;
-}
+import AdminDashboard from '@/components/dashboard/AdminDashboard';
+import FAQManager from '@/components/admin/FAQManager';
+import ConversationViewer from '@/components/admin/ConversationViewer';
+import UserTable from '@/components/admin/UserTable';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
   const [isDark, setIsDark] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
-  const [conversations, setConversations] = useState<ConversationWithDetails[]>([]);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    totalConversations: 0,
-    activeAdvisors: 0,
-  });
 
   const t = translations[language];
 
   useEffect(() => {
+    // Check authentication and redirect if not admin
+    if (!loading && (!user || user.userType !== 'admin')) {
+      navigate('/dashboard');
+      return;
+    }
+
     const savedTheme = localStorage.getItem('theme');
     const savedLang = localStorage.getItem('language') as Language;
     if (savedTheme === 'dark') {
@@ -43,11 +33,7 @@ const AdminPanel = () => {
     }
     if (savedLang) setLanguage(savedLang);
     document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
-
-    checkAuth();
-    loadStats();
-    loadConversations();
-  }, []);
+  }, [loading, user, navigate]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -62,76 +48,17 @@ const AdminPanel = () => {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/auth');
-      return;
-    }
-
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', session.user.id)
-      .single();
-
-    if (roleData?.role !== 'admin') {
-      navigate('/dashboard');
-    }
-  };
-
-  const loadStats = async () => {
-    const [usersResult, conversationsResult, advisorsResult] = await Promise.all([
-      supabase.from('profiles').select('id', { count: 'exact', head: true }),
-      supabase.from('conversations').select('id', { count: 'exact', head: true }),
-      supabase.from('advisors').select('id', { count: 'exact', head: true }),
-    ]);
-
-    setStats({
-      totalUsers: usersResult.count || 0,
-      totalConversations: conversationsResult.count || 0,
-      activeAdvisors: advisorsResult.count || 0,
-    });
-  };
-
-  const loadConversations = async () => {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('id, created_at, status, student_id, advisor_id')
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (error) {
-      console.error('Error loading conversations:', error);
-      return;
-    }
-
-    if (!data) {
-      setConversations([]);
-      return;
-    }
-
-    const conversationsWithDetails = await Promise.all(
-      data.map(async (conv) => {
-        const [studentResult, advisorResult, messageCount] = await Promise.all([
-          supabase.from('profiles').select('full_name, student_id').eq('id', conv.student_id).single(),
-          supabase.from('profiles').select('full_name').eq('id', conv.advisor_id).single(),
-          supabase.from('messages').select('id', { count: 'exact', head: true }).eq('conversation_id', conv.id),
-        ]);
-
-        return {
-          id: conv.id,
-          created_at: conv.created_at,
-          status: conv.status,
-          student_profile: studentResult.data || { full_name: 'Unknown', student_id: 'N/A' },
-          advisor_profile: advisorResult.data || { full_name: 'Unknown' },
-          message_count: messageCount.count || 0,
-        };
-      })
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-muted-foreground">Loading...</p>
+      </div>
     );
+  }
 
-    setConversations(conversationsWithDetails);
-  };
+  if (!user || user.userType !== 'admin') {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -162,114 +89,36 @@ const AdminPanel = () => {
       </header>
 
       <main className="container mx-auto px-4 py-6">
-        <div className="grid gap-6 md:grid-cols-3 mb-6">
-          <Card className="hover:shadow-elevated transition-shadow">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
-                <CardTitle>{t.totalUsers}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-primary">{stats.totalUsers}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-elevated transition-shadow">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-secondary" />
-                <CardTitle>{t.totalChats}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-secondary">{stats.totalConversations}</div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover:shadow-elevated transition-shadow">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <Users className="h-5 w-5 text-accent" />
-                <CardTitle>{language === 'en' ? 'Active Advisors' : 'المستشارون النشطون'}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold text-accent">{stats.activeAdvisors}</div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Tabs defaultValue="conversations" className="space-y-4">
-          <TabsList>
+        <Tabs defaultValue="dashboard" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="dashboard">
+              {language === 'en' ? 'Dashboard' : 'لوحة التحكم'}
+            </TabsTrigger>
+            <TabsTrigger value="faqs">
+              {language === 'en' ? 'FAQs' : 'الأسئلة الشائعة'}
+            </TabsTrigger>
             <TabsTrigger value="conversations">
-              {language === 'en' ? 'All Conversations' : 'جميع المحادثات'}
+              {language === 'en' ? 'Conversations' : 'المحادثات'}
             </TabsTrigger>
             <TabsTrigger value="users">
               {language === 'en' ? 'Users' : 'المستخدمون'}
             </TabsTrigger>
           </TabsList>
 
+          <TabsContent value="dashboard">
+            <AdminDashboard user={user} language={language} />
+          </TabsContent>
+
+          <TabsContent value="faqs">
+            <FAQManager />
+          </TabsContent>
+
           <TabsContent value="conversations">
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === 'en' ? 'Recent Conversations' : 'المحادثات الأخيرة'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {conversations.length === 0 ? (
-                    <p className="text-muted-foreground text-center py-8">
-                      {language === 'en' ? 'No conversations yet' : 'لا توجد محادثات بعد'}
-                    </p>
-                  ) : (
-                    conversations.map((conv) => (
-                      <div
-                        key={conv.id}
-                        className="border rounded-lg p-4 hover:bg-accent/5 transition-colors"
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="font-semibold">
-                              {language === 'en' ? 'Student: ' : 'الطالب: '}
-                              {conv.student_profile.full_name}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {language === 'en' ? 'ID: ' : 'الرقم الجامعي: '}
-                              {conv.student_profile.student_id}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              {language === 'en' ? 'Advisor: ' : 'المستشار: '}
-                              {conv.advisor_profile.full_name}
-                            </p>
-                          </div>
-                          <div className="text-end">
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(conv.created_at).toLocaleDateString()}
-                            </p>
-                            <p className="text-sm font-semibold">
-                              {conv.message_count} {language === 'en' ? 'messages' : 'رسالة'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <ConversationViewer />
           </TabsContent>
 
           <TabsContent value="users">
-            <Card>
-              <CardHeader>
-                <CardTitle>{language === 'en' ? 'User Management' : 'إدارة المستخدمين'}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground text-center py-8">
-                  {language === 'en' ? 'User management features coming soon' : 'ميزات إدارة المستخدمين قريباً'}
-                </p>
-              </CardContent>
-            </Card>
+            <UserTable />
           </TabsContent>
         </Tabs>
       </main>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,31 +11,21 @@ import { GraduationCap } from 'lucide-react';
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, register, isAuthenticated, loading: authLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    studentId: '',
     fullName: ''
   });
 
   useEffect(() => {
-    // Check if user is already logged in
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        navigate('/dashboard');
-      }
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session) {
-        navigate('/dashboard');
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [navigate]);
+    // Redirect if already logged in
+    if (isAuthenticated && !authLoading) {
+      navigate('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,41 +33,28 @@ const Auth = () => {
 
     try {
       if (isLogin) {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: formData.email,
-          password: formData.password,
-        });
+        await login(formData.email, formData.password);
 
-        if (error) throw error;
-        
         toast({
           title: "Welcome back!",
           description: "You have successfully logged in.",
         });
-      } else {
-        const { data, error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            emailRedirectTo: `${window.location.origin}/`,
-            data: {
-              student_id: formData.studentId,
-              full_name: formData.fullName,
-            }
-          }
-        });
 
-        if (error) throw error;
+        navigate('/dashboard');
+      } else {
+        await register(formData.email, formData.password, formData.fullName);
 
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account.",
+          description: "You have successfully registered.",
         });
+
+        navigate('/dashboard');
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message,
+        description: error.message || 'An error occurred',
         variant: "destructive",
       });
     } finally {
@@ -104,28 +81,16 @@ const Auth = () => {
         <CardContent>
           <form onSubmit={handleAuth} className="space-y-4">
             {!isLogin && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    placeholder="Enter your full name"
-                    value={formData.fullName}
-                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="studentId">Student ID</Label>
-                  <Input
-                    id="studentId"
-                    placeholder="Enter your student ID"
-                    value={formData.studentId}
-                    onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                    required
-                  />
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  placeholder="Enter your full name"
+                  value={formData.fullName}
+                  onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                  required
+                />
+              </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
@@ -153,6 +118,18 @@ const Auth = () => {
               {loading ? 'Loading...' : isLogin ? 'Sign In' : 'Create Account'}
             </Button>
           </form>
+
+          {/* Quick login hints for testing */}
+          {isLogin && (
+            <div className="mt-4 p-3 bg-muted rounded-md text-xs">
+              <p className="font-semibold mb-1">Test Accounts:</p>
+              <p>Admin: admin@mentorlink.com</p>
+              <p>Advisor: advisor.l1.1@mentorlink.com</p>
+              <p>Student: s1a001@student.mentorlink.com</p>
+              <p className="mt-1 text-muted-foreground">Password: password123</p>
+            </div>
+          )}
+
           <div className="mt-4 text-center text-sm">
             <button
               type="button"

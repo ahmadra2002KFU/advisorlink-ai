@@ -1,40 +1,39 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { ArrowLeft, Send, Loader2, Moon, Sun, Languages } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
-import { User } from '@supabase/supabase-js';
+import { chatApi } from '@/api';
+import { useAuth } from '@/context/AuthContext';
 
 interface Conversation {
-  id: string;
-  student_id: string;
-  created_at: string;
-  profiles: {
-    full_name: string;
-    student_id: string;
-  };
+  id: number;
+  studentId: number;
+  studentName: string;
+  lastMessage?: string;
+  lastMessageTime?: string;
 }
 
 interface Message {
-  id: string;
+  id: number;
   content: string;
-  sender_id: string;
-  created_at: string;
+  senderId: number;
+  conversationId: number;
+  createdAt: string;
+  isRead: boolean;
 }
 
 const AdvisorChat = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const [selectedConversation, setSelectedConversation] = useState<number | null>(null);
   const [input, setInput] = useState('');
-  const [loading, setLoading] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -50,9 +49,14 @@ const AdvisorChat = () => {
     }
     if (savedLang) setLanguage(savedLang);
     document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
-    
-    checkAuth();
   }, []);
+
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate('/auth');
+    }
+  }, [user, navigate]);
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -67,116 +71,56 @@ const AdvisorChat = () => {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
-  const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      navigate('/auth');
-      return;
-    }
-    setUser(session.user);
-    loadConversations(session.user.id);
-  };
+  // Fetch conversations
+  const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
+    queryKey: ['conversations'],
+    queryFn: chatApi.getConversations,
+    enabled: !!user
+  });
 
-  const loadConversations = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('conversations')
-      .select('id, student_id, created_at')
-      .eq('advisor_id', userId)
-      .order('updated_at', { ascending: false });
+  // Fetch messages with polling
+  const { data: messages = [] } = useQuery({
+    queryKey: ['messages', selectedConversation],
+    queryFn: () => chatApi.getMessages(selectedConversation!),
+    enabled: !!selectedConversation,
+    refetchInterval: 3000, // Poll every 3 seconds
+  });
 
-    if (error) {
-      console.error('Error loading conversations:', error);
-      return;
-    }
-
-    if (!data) {
-      setConversations([]);
-      return;
-    }
-
-    // Fetch profile data for each conversation
-    const conversationsWithProfiles = await Promise.all(
-      data.map(async (conv) => {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, student_id')
-          .eq('id', conv.student_id)
-          .single();
-
-        return {
-          ...conv,
-          profiles: profile || { full_name: 'Unknown', student_id: 'N/A' },
-        };
-      })
-    );
-
-    setConversations(conversationsWithProfiles);
-  };
-
-  const loadMessages = async (conversationId: string) => {
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Error loading messages:', error);
-    } else {
-      setMessages(data || []);
-    }
-  };
-
-  useEffect(() => {
-    if (selectedConversation) {
-      loadMessages(selectedConversation);
-
-      const channel = supabase
-        .channel('messages')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `conversation_id=eq.${selectedConversation}`,
-          },
-          (payload) => {
-            setMessages((prev) => [...prev, payload.new as Message]);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [selectedConversation]);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const sendMessage = async () => {
-    if (!input.trim() || !selectedConversation || !user) return;
-
-    setLoading(true);
-    const { error } = await supabase.from('messages').insert({
-      conversation_id: selectedConversation,
-      sender_id: user.id,
-      content: input,
-    });
-
-    if (error) {
+  // Send message mutation
+  const sendMessageMutation = useMutation({
+    mutationFn: (message: string) => chatApi.sendMessage(selectedConversation!, message),
+    onSuccess: () => {
+      setInput('');
+      queryClient.invalidateQueries({ queryKey: ['messages', selectedConversation] });
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+    onError: () => {
       toast({
         title: language === 'en' ? 'Error' : 'خطأ',
         description: language === 'en' ? 'Failed to send message' : 'فشل إرسال الرسالة',
         variant: 'destructive',
       });
-    } else {
-      setInput('');
     }
-    setLoading(false);
+  });
+
+  // Auto-scroll to bottom when new messages arrive
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // Mark messages as read when viewing
+  useEffect(() => {
+    if (selectedConversation && messages.length > 0) {
+      const unreadMessages = messages.filter((msg: Message) => !msg.isRead && msg.senderId !== user?.id);
+      unreadMessages.forEach((msg: Message) => {
+        chatApi.markAsRead(msg.id).catch(console.error);
+      });
+    }
+  }, [messages, selectedConversation, user]);
+
+  const sendMessage = () => {
+    if (!input.trim() || !selectedConversation) return;
+    sendMessageMutation.mutate(input);
   };
 
   return (
@@ -209,12 +153,16 @@ const AdvisorChat = () => {
               <CardTitle>{t.myStudents}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 overflow-y-auto max-h-[calc(100vh-250px)]">
-              {conversations.length === 0 ? (
+              {conversationsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : conversations.length === 0 ? (
                 <p className="text-muted-foreground text-center py-8">
                   {language === 'en' ? 'No conversations yet' : 'لا توجد محادثات بعد'}
                 </p>
               ) : (
-                conversations.map((conv) => (
+                conversations.map((conv: Conversation) => (
                   <Button
                     key={conv.id}
                     variant={selectedConversation === conv.id ? 'default' : 'outline'}
@@ -222,8 +170,10 @@ const AdvisorChat = () => {
                     onClick={() => setSelectedConversation(conv.id)}
                   >
                     <div className="text-start">
-                      <p className="font-semibold">{conv.profiles.full_name}</p>
-                      <p className="text-xs opacity-70">{conv.profiles.student_id}</p>
+                      <p className="font-semibold">{conv.studentName}</p>
+                      {conv.lastMessage && (
+                        <p className="text-xs opacity-70 truncate">{conv.lastMessage}</p>
+                      )}
                     </div>
                   </Button>
                 ))
@@ -235,23 +185,23 @@ const AdvisorChat = () => {
             {selectedConversation ? (
               <>
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                  {messages.map((message) => (
+                  {messages.map((message: Message) => (
                     <div
                       key={message.id}
                       className={`flex ${
-                        message.sender_id === user?.id ? 'justify-end' : 'justify-start'
+                        message.senderId === user?.id ? 'justify-end' : 'justify-start'
                       }`}
                     >
                       <div
                         className={`max-w-[80%] rounded-lg p-3 ${
-                          message.sender_id === user?.id
+                          message.senderId === user?.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-secondary text-secondary-foreground'
                         }`}
                       >
                         <p className="whitespace-pre-wrap">{message.content}</p>
                         <p className="text-xs opacity-70 mt-1">
-                          {new Date(message.created_at).toLocaleTimeString()}
+                          {new Date(message.createdAt).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>
@@ -271,11 +221,15 @@ const AdvisorChat = () => {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       placeholder={language === 'en' ? 'Type your message...' : 'اكتب رسالتك...'}
-                      disabled={loading}
+                      disabled={sendMessageMutation.isPending}
                       className="flex-1"
                     />
-                    <Button type="submit" disabled={loading || !input.trim()}>
-                      <Send className="h-4 w-4" />
+                    <Button type="submit" disabled={sendMessageMutation.isPending || !input.trim()}>
+                      {sendMessageMutation.isPending ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Send className="h-4 w-4" />
+                      )}
                     </Button>
                   </form>
                 </div>
