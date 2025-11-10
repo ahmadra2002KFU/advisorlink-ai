@@ -8,7 +8,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "ts-node scripts/seed-data.ts",
-    "verify": "ts-node scripts/verify-setup.ts"
+    "verify": "ts-node scripts/verify-setup.ts",
+    "migrate": "ts-node scripts/run-migration.ts",
+    "check-schema": "ts-node scripts/check-schema.ts"
   },
   "keywords": [],
   "author": "",

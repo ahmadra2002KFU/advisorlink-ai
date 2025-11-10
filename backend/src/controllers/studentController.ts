@@ -11,8 +11,11 @@ export async function getStudentProfile(req: Request, res: Response) {
         u.email,
         u.full_name,
         l.level_number,
+        l.level_number AS level,
         l.level_name,
-        sec.section_name
+        sec.section_name,
+        sec.section_name AS section,
+        s.student_id AS student_number
       FROM students s
       JOIN users u ON s.user_id = u.id
       JOIN levels l ON s.level_id = l.id
@@ -71,6 +74,7 @@ export async function getStudentAdvisor(req: Request, res: Response) {
         aa.*,
         a.specialization,
         a.is_available,
+        CASE WHEN a.is_available = 1 THEN 'Available' ELSE 'Unavailable' END as availability,
         u.full_name as advisor_name,
         u.email as advisor_email
       FROM advisor_assignments aa

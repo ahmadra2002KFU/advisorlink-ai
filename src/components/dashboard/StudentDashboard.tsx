@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, User as UserIcon, Bot, BookOpen, GraduationCap, TrendingUp, Calendar } from 'lucide-react';
+import { MessageSquare, User as UserIcon, Bot, BookOpen, GraduationCap, TrendingUp, Calendar, Clock, MapPin, Mail, Award } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { translations, Language } from '@/lib/i18n';
@@ -138,11 +138,11 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">{t.studentId}:</span>
-                  <span className="font-medium">{profile?.studentId || 'N/A'}</span>
+                  <span className="font-medium">{profile?.student_number || profile?.student_id || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">{t.fullName}:</span>
-                  <span className="font-medium">{profile?.fullName || user.fullName}</span>
+                  <span className="font-medium">{profile?.full_name || user.fullName}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">{t.email}:</span>
@@ -169,7 +169,7 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
                       <Calendar className="h-4 w-4 text-secondary" />
                       <span className="text-muted-foreground">Attendance:</span>
                     </div>
-                    <span className="font-bold text-lg">{profile?.attendancePercentage || 'N/A'}%</span>
+                    <span className="font-bold text-lg">{profile?.attendance_percentage?.toFixed(1) || 'N/A'}%</span>
                   </div>
                 </div>
               </div>
@@ -194,11 +194,11 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Name:</span>
-                  <span className="font-medium">{advisor.fullName}</span>
+                  <span className="font-medium">{advisor.advisor_name || advisor.full_name || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Email:</span>
-                  <span className="font-medium">{advisor.email}</span>
+                  <span className="font-medium">{advisor.advisor_email || advisor.email || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">Specialization:</span>
@@ -242,26 +242,113 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
               <Skeleton className="h-16 w-full" />
             </div>
           ) : courses && courses.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {courses.map((course: any) => (
                 <div
                   key={course.id}
-                  className="p-3 border rounded-lg hover:bg-accent/5 transition-colors"
+                  className="p-4 border rounded-lg hover:shadow-md transition-all bg-card"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                  {/* Course Header */}
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3">
                       <div className="p-2 bg-primary/10 rounded-lg">
-                        <GraduationCap className="h-4 w-4 text-primary" />
+                        <GraduationCap className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium">{course.courseName}</p>
-                        <p className="text-sm text-muted-foreground">Code: {course.courseCode}</p>
+                        <h4 className="font-semibold text-lg">{course.course_name}</h4>
+                        <p className="text-sm text-muted-foreground">{course.course_code} • {course.department || 'N/A'}</p>
                       </div>
                     </div>
-                    <span className="text-xs px-2 py-1 bg-secondary/20 rounded-full">
-                      {course.credits} credits
-                    </span>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="text-xs px-2 py-1 bg-secondary/20 rounded-full font-medium">
+                        {course.credit_hours || 3} credits
+                      </span>
+                      {course.current_grade && course.current_grade !== 'In Progress' && (
+                        <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                          course.current_grade.startsWith('A') ? 'bg-green-100 text-green-700' :
+                          course.current_grade.startsWith('B') ? 'bg-blue-100 text-blue-700' :
+                          course.current_grade.startsWith('C') ? 'bg-yellow-100 text-yellow-700' :
+                          'bg-red-100 text-red-700'
+                        }`}>
+                          Grade: {course.current_grade}
+                        </span>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Course Description */}
+                  {course.course_description && (
+                    <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+                      {course.course_description}
+                    </p>
+                  )}
+
+                  {/* Course Details Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    {/* Instructor */}
+                    {course.instructor_name && (
+                      <div className="flex items-start gap-2">
+                        <UserIcon className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="font-medium">{course.instructor_name}</p>
+                          {course.instructor_email && (
+                            <a
+                              href={`mailto:${course.instructor_email}`}
+                              className="text-xs text-primary hover:underline flex items-center gap-1"
+                            >
+                              <Mail className="h-3 w-3" />
+                              {course.instructor_email}
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Schedule */}
+                    {course.class_time && course.class_days && (
+                      <div className="flex items-start gap-2">
+                        <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="font-medium">{course.class_days}</p>
+                          <p className="text-xs text-muted-foreground">{course.class_time}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Location */}
+                    {course.building && course.room_number && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="font-medium">Room {course.room_number}</p>
+                          <p className="text-xs text-muted-foreground">{course.building}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Semester */}
+                    {course.semester && (
+                      <div className="flex items-start gap-2">
+                        <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <p className="font-medium">{course.semester}</p>
+                          {course.current_grade === 'In Progress' && (
+                            <p className="text-xs text-muted-foreground">Currently enrolled</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Prerequisites */}
+                  {course.prerequisites && (
+                    <div className="mt-3 pt-3 border-t">
+                      <p className="text-xs text-muted-foreground">
+                        <Award className="h-3 w-3 inline mr-1" />
+                        <span className="font-medium">Prerequisites:</span> {course.prerequisites}
+                      </p>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

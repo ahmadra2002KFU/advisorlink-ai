@@ -49,12 +49,25 @@ CREATE INDEX IF NOT EXISTS idx_students_student_id ON students(student_id);
 CREATE INDEX IF NOT EXISTS idx_students_level ON students(level_id);
 CREATE INDEX IF NOT EXISTS idx_students_section ON students(section_id);
 
--- 5. Student courses table (enrolled courses)
+-- 5. Student courses table (enrolled courses with enhanced details)
 CREATE TABLE IF NOT EXISTS student_courses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     student_id INTEGER NOT NULL,
     course_name TEXT NOT NULL,
     course_code TEXT NOT NULL,
+    -- Enhanced fields (added 2025-11-07)
+    instructor_name TEXT,
+    instructor_email TEXT,
+    class_time TEXT,
+    class_days TEXT,
+    room_number TEXT,
+    building TEXT,
+    credit_hours INTEGER DEFAULT 3,
+    current_grade TEXT,
+    semester TEXT,
+    department TEXT,
+    course_description TEXT,
+    prerequisites TEXT,
     FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_student_courses_student ON student_courses(student_id);
