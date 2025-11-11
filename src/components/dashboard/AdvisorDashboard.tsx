@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { MessageSquare, Users, Calendar, Loader2 } from 'lucide-react';
+import { MessageSquare, Users, Calendar, Loader2, Bot, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -151,6 +151,66 @@ const AdvisorDashboard = ({ language }: AdvisorDashboardProps) => {
                 </Label>
               </div>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Quick Actions Row */}
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* AI Assistant Card */}
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Bot className="h-5 w-5 text-primary" />
+              </div>
+              <CardTitle>
+                {language === 'en' ? 'AI Assistant' : 'المساعد الذكي'}
+              </CardTitle>
+            </div>
+            <CardDescription>
+              {language === 'en'
+                ? 'Get AI-powered assistance with your students'
+                : 'احصل على مساعدة مدعومة بالذكاء الاصطناعي لطلابك'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              className="w-full"
+              onClick={() => navigate('/chat')}
+            >
+              <Bot className="h-4 w-4 mr-2" />
+              {language === 'en' ? 'Open AI Assistant' : 'فتح المساعد الذكي'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Batch Actions Card */}
+        <Card className="hover:shadow-elevated transition-shadow">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-secondary/10 rounded-lg">
+                <FileText className="h-5 w-5 text-secondary" />
+              </div>
+              <CardTitle>
+                {language === 'en' ? 'Reports & Actions' : 'التقارير والإجراءات'}
+              </CardTitle>
+            </div>
+            <CardDescription>
+              {language === 'en'
+                ? 'Generate reports and perform batch actions'
+                : 'إنشاء التقارير وتنفيذ الإجراءات الجماعية'}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="secondary"
+              className="w-full"
+              onClick={() => navigate('/advisor-chat')}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {language === 'en' ? 'Manage Students' : 'إدارة الطلاب'}
+            </Button>
           </CardContent>
         </Card>
       </div>

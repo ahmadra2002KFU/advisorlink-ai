@@ -22,7 +22,16 @@ export async function getAdvisorProfile(req: Request, res: Response) {
       return res.status(404).json({ error: 'Advisor profile not found' });
     }
 
-    return res.json(advisor);
+    // Convert is_available from number to boolean
+    const response = {
+      ...advisor,
+      isAvailable: advisor.is_available === 1,
+      name: advisor.full_name,
+      level: advisor.level_name,
+      specialization: advisor.specialization
+    };
+
+    return res.json(response);
   } catch (error) {
     console.error('Get advisor profile error:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -44,11 +53,14 @@ export async function getAssignedStudents(req: Request, res: Response) {
 
     const students = db.prepare(
       `SELECT
-        s.*,
+        s.id,
+        s.student_id,
         u.full_name,
         u.email,
         l.level_name,
-        sec.section_name
+        sec.section_name,
+        s.gpa,
+        s.attendance_percentage
       FROM advisor_assignments aa
       JOIN students s ON aa.student_id = s.id
       JOIN users u ON s.user_id = u.id
@@ -58,7 +70,20 @@ export async function getAssignedStudents(req: Request, res: Response) {
       ORDER BY l.level_number, sec.section_name, u.full_name`
     ).all(advisor.id) as any[];
 
-    return res.json(students);
+    // Format response with cleaner field names
+    const formattedStudents = students.map(student => ({
+      id: student.id,
+      studentId: student.student_id,
+      name: student.full_name,
+      email: student.email,
+      level: student.level_name,
+      section: student.section_name,
+      department: student.level_name, // Using level as department for now
+      gpa: student.gpa,
+      attendance: student.attendance_percentage
+    }));
+
+    return res.json(formattedStudents);
   } catch (error) {
     console.error('Get assigned students error:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -70,9 +95,12 @@ export async function updateAvailability(req: Request, res: Response) {
     const userId = req.user?.userId;
     const { isAvailable } = req.body;
 
+    // Convert boolean to number for SQLite (1 = true, 0 = false)
+    const availabilityValue = isAvailable ? 1 : 0;
+
     const result = db.prepare(
       'UPDATE advisors SET is_available = ? WHERE user_id = ?'
-    ).run(isAvailable, userId);
+    ).run(availabilityValue, userId);
 
     if (result.changes === 0) {
       return res.status(404).json({ error: 'Advisor not found' });

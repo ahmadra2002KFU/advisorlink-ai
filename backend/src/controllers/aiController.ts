@@ -1,141 +1,172 @@
 import { Request, Response } from 'express';
 import { db } from '../config/database';
-import { callGeminiAPI, FunctionDeclaration, FunctionHandlerMap } from '../utils/gemini';
+import { callGLMAPI, FunctionHandlerMap } from '../utils/glm';
+import OpenAI from 'openai';
 
 // ============================================
-// FUNCTION DECLARATIONS FOR GEMINI AI
+// FUNCTION DECLARATIONS FOR GLM-4.6 AI (OpenAI Compatible Format)
 // ============================================
 
 // STUDENT FUNCTION DECLARATIONS (Phase 1)
-const studentFunctionDeclarations: FunctionDeclaration[] = [
+const studentFunctionDeclarations: OpenAI.Chat.ChatCompletionTool[] = [
   {
-    name: 'getCourseSchedule',
-    description: 'Get the schedule details for a specific course by course name or course code. Returns instructor name, class time, days, room number, building location, and credit hours.',
-    parameters: {
-      type: 'object',
-      properties: {
-        courseName: {
-          type: 'string',
-          description: 'The name or code of the course to search for (e.g., "Introduction to Computer Science" or "CS101")'
-        }
-      },
-      required: ['courseName']
+    type: 'function',
+    function: {
+      name: 'getCourseSchedule',
+      description: 'Get the schedule details for a specific course by course name or course code. Returns instructor name, class time, days, room number, building location, and credit hours.',
+      parameters: {
+        type: 'object',
+        properties: {
+          courseName: {
+            type: 'string',
+            description: 'The name or code of the course to search for (e.g., "Introduction to Computer Science" or "CS101")'
+          }
+        },
+        required: ['courseName']
+      }
     }
   },
   {
-    name: 'getAdvisorContactInfo',
-    description: 'Get contact information for an advisor by their assigned level number. Returns advisor name, email, specialization, and availability status.',
-    parameters: {
-      type: 'object',
-      properties: {
-        levelNumber: {
-          type: 'number',
-          description: 'The level number (1-5) for which to find the advisor'
-        }
-      },
-      required: ['levelNumber']
+    type: 'function',
+    function: {
+      name: 'getAdvisorContactInfo',
+      description: 'Get contact information for an advisor by their assigned level number. Returns advisor name, email, specialization, and availability status.',
+      parameters: {
+        type: 'object',
+        properties: {
+          levelNumber: {
+            type: 'number',
+            description: 'The level number (1-5) for which to find the advisor'
+          }
+        },
+        required: ['levelNumber']
+      }
     }
   },
   {
-    name: 'getStudentAdvisorInfo',
-    description: 'Get the assigned advisor information for the current student. Returns advisor name, email, specialization, and availability status.',
-    parameters: {
-      type: 'object',
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getStudentAdvisorInfo',
+      description: 'Get the assigned advisor information for the current student. Returns advisor name, email, specialization, and availability status.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'searchFacilities',
-    description: 'Search for campus facilities like computer labs, libraries, buildings, or departments. Returns facility name, building, room number, and related information.',
-    parameters: {
-      type: 'object',
-      properties: {
-        searchTerm: {
-          type: 'string',
-          description: 'The facility name or type to search for (e.g., "computer lab", "library", "engineering building")'
-        }
-      },
-      required: ['searchTerm']
+    type: 'function',
+    function: {
+      name: 'searchFacilities',
+      description: 'Search for campus facilities like computer labs, libraries, buildings, or departments. Returns facility name, building, room number, and related information.',
+      parameters: {
+        type: 'object',
+        properties: {
+          searchTerm: {
+            type: 'string',
+            description: 'The facility name or type to search for (e.g., "computer lab", "library", "engineering building")'
+          }
+        },
+        required: ['searchTerm']
+      }
     }
   },
   {
-    name: 'getStaffContact',
-    description: 'Get contact information for university staff members who can help with specific student needs. Searches by issue type, department, or category. Use this when students need help with: registration problems, IT/technical support, financial aid, academic issues, student services, career guidance, library resources, international student matters, or facilities/campus issues.',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'What the student needs help with (e.g., "registration problems", "IT support", "financial aid", "academic probation", "visa issues", "career counseling", "library help"). Can also search by staff role or department name.'
-        }
-      },
-      required: ['query']
+    type: 'function',
+    function: {
+      name: 'getStaffContact',
+      description: 'Get contact information for university staff members who can help with specific student needs. Searches by issue type, department, or category. Use this when students need help with: registration problems, IT/technical support, financial aid, academic issues, student services, career guidance, library resources, international student matters, or facilities/campus issues.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'What the student needs help with (e.g., "registration problems", "IT support", "financial aid", "academic probation", "visa issues", "career counseling", "library help"). Can also search by staff role or department name.'
+          }
+        },
+        required: ['query']
+      }
     }
   }
 ];
 
 // ADVISOR FUNCTION DECLARATIONS (Phase 2)
-const advisorFunctionDeclarations: FunctionDeclaration[] = [
+const advisorFunctionDeclarations: OpenAI.Chat.ChatCompletionTool[] = [
   {
-    name: 'getAdvisorStudentList',
-    description: 'Get the complete list of students assigned to the current advisor. Returns student names, emails, levels, sections, GPAs, and attendance information. Ordered by level, section, and name.',
-    parameters: {
-      type: 'object',
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getAdvisorStudentList',
+      description: 'Get the complete list of students assigned to the current advisor. Returns student names, emails, levels, sections, GPAs, and attendance information. Ordered by level, section, and name.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'getHighestGPAStudent',
-    description: 'Get the student with the highest GPA among those assigned to the current advisor. Returns the top student\'s name, email, level, section, GPA, and attendance.',
-    parameters: {
-      type: 'object',
-      properties: {}
+    type: 'function',
+    function: {
+      name: 'getHighestGPAStudent',
+      description: 'Get the student with the highest GPA among those assigned to the current advisor. Returns the top student\'s name, email, level, section, GPA, and attendance.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
     }
   },
   {
-    name: 'getHonorStudents',
-    description: 'Get all honor students (students with high GPAs) assigned to the current advisor. Returns students categorized by honor level: Highest Honors (Summa Cum Laude, GPA >= 3.90), High Honors (Magna Cum Laude, GPA >= 3.75), and Honors (Cum Laude, GPA >= 3.50). Optional minimum GPA parameter to filter results.',
-    parameters: {
-      type: 'object',
-      properties: {
-        minGPA: {
-          type: 'number',
-          description: 'Minimum GPA threshold for honor students. Defaults to 3.5 if not specified. Must be between 0.0 and 4.0.'
+    type: 'function',
+    function: {
+      name: 'getHonorStudents',
+      description: 'Get all honor students (students with high GPAs) assigned to the current advisor. Returns students categorized by honor level: Highest Honors (Summa Cum Laude, GPA >= 3.90), High Honors (Magna Cum Laude, GPA >= 3.75), and Honors (Cum Laude, GPA >= 3.50). Optional minimum GPA parameter to filter results.',
+      parameters: {
+        type: 'object',
+        properties: {
+          minGPA: {
+            type: 'number',
+            description: 'Minimum GPA threshold for honor students. Defaults to 3.5 if not specified. Must be between 0.0 and 4.0.'
+          }
         }
       }
     }
   },
   {
-    name: 'getStudentsByGPA',
-    description: 'Get students based on a GPA threshold comparison. Can find students above or below a specific GPA value. Useful for identifying at-risk students (below threshold) or high-performing students (above threshold).',
-    parameters: {
-      type: 'object',
-      properties: {
-        threshold: {
-          type: 'number',
-          description: 'GPA threshold value for comparison (e.g., 2.0, 3.0, 3.5). Must be between 0.0 and 4.0.'
+    type: 'function',
+    function: {
+      name: 'getStudentsByGPA',
+      description: 'Get students based on a GPA threshold comparison. Can find students above or below a specific GPA value. Useful for identifying at-risk students (below threshold) or high-performing students (above threshold).',
+      parameters: {
+        type: 'object',
+        properties: {
+          threshold: {
+            type: 'number',
+            description: 'GPA threshold value for comparison (e.g., 2.0, 3.0, 3.5). Must be between 0.0 and 4.0.'
+          },
+          comparison: {
+            type: 'string',
+            description: 'Comparison type: "below" to find students with GPA below threshold (at-risk students), or "above" to find students with GPA above threshold (high performers). Defaults to "below".',
+            enum: ['below', 'above']
+          }
         },
-        comparison: {
-          type: 'string',
-          description: 'Comparison type: "below" to find students with GPA below threshold (at-risk students), or "above" to find students with GPA above threshold (high performers). Defaults to "below".',
-          enum: ['below', 'above']
-        }
-      },
-      required: ['threshold']
+        required: ['threshold']
+      }
     }
   },
   {
-    name: 'getLastStudentContact',
-    description: 'Get the most recent contact information for a specific student by name. Searches both advisor-student chat conversations and AI chat history to find the last interaction. Returns the most recent contact timestamp and type (conversation or AI chat).',
-    parameters: {
-      type: 'object',
-      properties: {
-        studentName: {
-          type: 'string',
-          description: 'The full or partial name of the student to search for (e.g., "John Smith" or "Smith"). Fuzzy matching is supported.'
-        }
-      },
-      required: ['studentName']
+    type: 'function',
+    function: {
+      name: 'getLastStudentContact',
+      description: 'Get the most recent contact information for a specific student by name. Searches both advisor-student chat conversations and AI chat history to find the last interaction. Returns the most recent contact timestamp and type (conversation or AI chat).',
+      parameters: {
+        type: 'object',
+        properties: {
+          studentName: {
+            type: 'string',
+            description: 'The full or partial name of the student to search for (e.g., "John Smith" or "Smith"). Fuzzy matching is supported.'
+          }
+        },
+        required: ['studentName']
+      }
     }
   }
 ];
@@ -1030,7 +1061,7 @@ export async function chatWithAI(req: Request, res: Response) {
 
     let context: any = {};
     let userContext: any = {};
-    let availableFunctions: FunctionDeclaration[] = [];
+    let availableFunctions: OpenAI.Chat.ChatCompletionTool[] = [];
     let advisorName = 'your academic advisor';
 
     // ============================================
@@ -1169,8 +1200,8 @@ export async function chatWithAI(req: Request, res: Response) {
       });
     }
 
-    // Call Gemini API with function calling support
-    const aiResponse = await callGeminiAPI(
+    // Call GLM-4.6 API with function calling support
+    const aiResponse = await callGLMAPI(
       message,
       userContext,
       faqs,
