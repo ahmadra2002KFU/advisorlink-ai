@@ -247,8 +247,34 @@ ${functionList}
   let roleDescription = '';
   let instructions = '';
 
-  if (studentContext.studentId) {
-    // Student context
+  // Detect if this is an advisor asking about a specific student
+  const isAdvisorStudentContext = studentContext.studentId && advisorName.includes('(advisor)');
+
+  if (isAdvisorStudentContext) {
+    // Advisor asking about a specific student
+    roleDescription = `You are an AI assistant helping ${advisorName} analyze and advise a specific student.\nProvide insights, recommendations, and detailed information about this student's academic performance and needs.`;
+    contextSection = `## Student Being Analyzed
+- **Student ID**: ${studentContext.studentId}
+- **Name**: ${studentContext.fullName}
+- **Current Level**: ${studentContext.levelName}
+- **Section**: ${studentContext.sectionName}
+- **GPA**: ${studentContext.gpa}
+- **Enrolled Courses**: ${coursesText}
+- **Attendance**: ${studentContext.attendance}%
+- **Advisor**: ${advisorName}
+
+**Important**: You are assisting the advisor in understanding and supporting this student. All responses should be from the advisor's perspective.`;
+
+    instructions = `## Instructions
+- **Primary Focus**: Provide detailed analysis and insights about this student's academic situation
+- **Database Queries**: Use the available functions to retrieve comprehensive information about the student
+- **Analysis**: Offer data-driven insights about the student's performance, attendance, and academic standing
+- **Recommendations**: Suggest specific intervention strategies, support resources, or action items for the advisor
+- **Context-Aware**: Consider the student's GPA, attendance, and course load when providing recommendations
+- **Professional Tone**: Maintain a professional, analytical tone appropriate for advisor-to-advisor communication
+- **Actionable Advice**: Focus on concrete steps the advisor can take to support the student`;
+  } else if (studentContext.studentId) {
+    // Student context (direct student interaction)
     roleDescription = 'You are an academic advisor assistant for the College.\nHelp students with academic questions using the FAQ database, their personal information, and available database functions.';
     contextSection = `## Student Context
 - **Student ID**: ${studentContext.studentId}

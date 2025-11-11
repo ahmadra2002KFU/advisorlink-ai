@@ -1044,11 +1044,14 @@ const functionHandlers: FunctionHandlerMap = {
 
 export async function chatWithAI(req: Request, res: Response) {
   try {
-    const { message, chatHistory = [] } = req.body;
+    const { message, chatHistory = [], selectedStudentId } = req.body;
     const userId = req.user?.userId;
     const userType = req.user?.userType; // 'student' | 'advisor' | 'admin'
 
     console.log(`[chatWithAI] User ID: ${userId}, User Type: ${userType}`);
+    if (selectedStudentId) {
+      console.log(`[chatWithAI] Selected Student ID: ${selectedStudentId}`);
+    }
 
     if (!message) {
       return res.status(400).json({ error: 'Message is required' });
@@ -1097,7 +1100,7 @@ export async function chatWithAI(req: Request, res: Response) {
         WHERE advisor_id = ?
       `).get(advisorData.advisor_id) as any;
 
-      // Context for advisor
+      // Context for function execution (advisor context)
       context = {
         advisorId: advisorData.advisor_id,
         userId: userId,
@@ -1105,21 +1108,76 @@ export async function chatWithAI(req: Request, res: Response) {
         advisorData: advisorData
       };
 
-      userContext = {
-        advisorId: advisorData.advisor_id,
-        fullName: advisorData.full_name,
-        email: advisorData.email,
-        levelName: advisorData.level_name,
-        levelNumber: advisorData.level_number,
-        specialization: advisorData.specialization || 'General',
-        studentCount: studentCount?.count || 0
-      };
-
       // CROSS-CONTEXT: Advisors get BOTH advisor functions AND student functions
       availableFunctions = [...studentFunctionDeclarations, ...advisorFunctionDeclarations];
 
-      console.log(`[chatWithAI] Advisor ${advisorData.full_name} has ${studentCount?.count || 0} students`);
-      console.log(`[chatWithAI] Available functions: ${availableFunctions.length} (student + advisor)`);
+      // ============================================
+      // ADVISOR WITH SELECTED STUDENT
+      // ============================================
+      if (selectedStudentId) {
+        console.log(`[chatWithAI] Advisor selected student ID: ${selectedStudentId}`);
+
+        // Get the selected student's data
+        const selectedStudent = db.prepare(`
+          SELECT
+            s.*,
+            u.full_name,
+            l.level_name,
+            sec.section_name
+          FROM students s
+          JOIN users u ON s.user_id = u.id
+          JOIN levels l ON s.level_id = l.id
+          JOIN sections sec ON s.section_id = sec.id
+          WHERE s.id = ?
+        `).get(selectedStudentId) as any;
+
+        if (!selectedStudent) {
+          return res.status(404).json({ error: 'Selected student not found' });
+        }
+
+        // Get selected student's courses
+        const studentCourses = db.prepare(
+          'SELECT course_name FROM student_courses WHERE student_id = ?'
+        ).all(selectedStudent.id) as any[];
+
+        const courseNames = studentCourses.map((c: any) => c.course_name);
+
+        // Build student context for LLM (advisor is asking about this student)
+        userContext = {
+          studentId: selectedStudent.student_id,
+          fullName: selectedStudent.full_name,
+          levelName: selectedStudent.level_name,
+          sectionName: selectedStudent.section_name,
+          gpa: selectedStudent.gpa?.toString() || 'N/A',
+          attendance: selectedStudent.attendance_percentage?.toString() || 'N/A',
+          courses: courseNames
+        };
+
+        // Set advisor name to indicate this is advisor-to-student context
+        advisorName = `${advisorData.full_name} (advisor)`;
+
+        console.log(`[chatWithAI] Context: Advisor ${advisorData.full_name} asking about student ${selectedStudent.full_name}`);
+        console.log(`[chatWithAI] Student has ${courseNames.length} courses`);
+        console.log(`[chatWithAI] Available functions: ${availableFunctions.length} (all functions)`);
+
+      // ============================================
+      // ADVISOR WITHOUT SELECTED STUDENT (General queries)
+      // ============================================
+      } else {
+        // No student selected - use advisor context
+        userContext = {
+          advisorId: advisorData.advisor_id,
+          fullName: advisorData.full_name,
+          email: advisorData.email,
+          levelName: advisorData.level_name,
+          levelNumber: advisorData.level_number,
+          specialization: advisorData.specialization || 'General',
+          studentCount: studentCount?.count || 0
+        };
+
+        console.log(`[chatWithAI] Advisor ${advisorData.full_name} has ${studentCount?.count || 0} students`);
+        console.log(`[chatWithAI] Available functions: ${availableFunctions.length} (student + advisor)`);
+      }
 
     // ============================================
     // STUDENT CONTEXT (Phase 1)

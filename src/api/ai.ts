@@ -6,8 +6,12 @@ export interface ChatMessage {
 }
 
 export const aiApi = {
-  chat: async (message: string, chatHistory: ChatMessage[] = []) => {
-    const { data } = await apiClient.post('/ai/chat', { message, chatHistory });
+  chat: async (message: string, chatHistory: ChatMessage[] = [], selectedStudentId?: string) => {
+    const { data } = await apiClient.post('/ai/chat', {
+      message,
+      chatHistory,
+      selectedStudentId
+    });
     return data;
   },
 

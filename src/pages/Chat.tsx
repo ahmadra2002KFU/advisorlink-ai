@@ -104,8 +104,12 @@ const Chat = () => {
         content: m.content
       }));
 
-      // Call AI API
-      const response = await aiApi.chat(userMessage.content, chatHistory);
+      // Call AI API (pass selectedStudentId if advisor has selected a student)
+      const response = await aiApi.chat(
+        userMessage.content,
+        chatHistory,
+        selectedStudentId || undefined
+      );
 
       // Add AI response to messages
       const aiMessage: Message = {
