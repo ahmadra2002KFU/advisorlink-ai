@@ -18,12 +18,34 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || [
-    'http://localhost:8080',
-    'http://localhost:8081',
-    'http://localhost:8082',
-    'http://localhost:3000'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    // In production, allow any origin since nginx proxies everything
+    // In development, allow localhost
+    const allowedOrigins = process.env.FRONTEND_URL
+      ? [process.env.FRONTEND_URL]
+      : [
+          'http://localhost',
+          'http://localhost:8080',
+          'http://localhost:8081',
+          'http://localhost:8082',
+          'http://localhost:3000'
+        ];
+
+    // Allow any origin in production (nginx handles the proxy)
+    if (process.env.NODE_ENV === 'production') {
+      return callback(null, true);
+    }
+
+    // In development, check allowed origins
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true
 }));
 app.use(express.json());
