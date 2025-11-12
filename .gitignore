@@ -22,3 +22,14 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Docker
+.env
+.env.production.local
+certbot/
+backups/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal

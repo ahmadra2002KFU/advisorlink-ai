@@ -1,0 +1,63 @@
+services:
+  # Backend API Service
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mentorlink-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - DB_PATH=/app/data/mentorlink.db
+      - JWT_SECRET=${JWT_SECRET}
+      - GLM_API_KEY=${GLM_API_KEY}
+      - FRONTEND_URL=http://localhost
+    volumes:
+      # Persist SQLite database
+      - backend-data:/app/data
+      # Optional: Mount logs directory
+      - backend-logs:/app/logs
+    networks:
+      - mentorlink-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mentorlink-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - VITE_API_URL=/api
+    depends_on:
+      - backend
+    networks:
+      - mentorlink-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+
+networks:
+  mentorlink-network:
+    driver: bridge
+
+volumes:
+  backend-data:
+    driver: local
+  backend-logs:
+    driver: local

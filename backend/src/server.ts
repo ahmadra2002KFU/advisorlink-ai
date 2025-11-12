@@ -81,7 +81,7 @@ function startServer() {
       console.log(`🚀 Server running on port ${PORT}`);
       console.log(`📡 Frontend URL: ${process.env.FRONTEND_URL || 'http://localhost:8080'}`);
       console.log(`🗄️  Database: ${process.env.DB_PATH || './mentorlink.db'}`);
-      console.log(`🤖 Gemini API: ${process.env.GEMINI_API_KEY ? 'Configured' : 'Not configured'}`);
+      console.log(`🤖 GLM API: ${process.env.GLM_API_KEY ? 'Configured' : 'Not configured'}`);
       console.log('\n📋 Available endpoints:');
       console.log('  POST   /api/auth/login');
       console.log('  POST   /api/auth/register');
