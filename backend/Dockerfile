@@ -41,9 +41,14 @@ RUN npm ci --only=production && \
 # Copy built files from builder stage
 COPY --from=builder /app/dist ./dist
 
-# Create data directory with proper permissions
-RUN mkdir -p /app/data && \
-    chown -R nodejs:nodejs /app && \
+# Create data directory first
+RUN mkdir -p /app/data
+
+# Copy database file from builder stage (includes it in the image)
+COPY --from=builder /app/*.db* /app/data/
+
+# Set proper permissions
+RUN chown -R nodejs:nodejs /app && \
     chmod -R 775 /app/data
 
 # Switch to non-root user

@@ -38,6 +38,8 @@ chmod +x VPS-DEPLOY.sh
 
 Done! Your app will be at: **http://138.68.137.154**
 
+**Note:** Database is now automatically included in the Docker image - no manual copying needed!
+
 ---
 
 ### Option 2: Git Push/Pull (If Using Git)
@@ -120,14 +122,8 @@ docker-compose down
 docker-compose build --no-cache
 docker-compose up -d
 
-# Copy database
-docker cp backend/mentorlink.db mentorlink-backend:/app/data/mentorlink.db
-
-# Fix permissions
-docker-compose exec -u root backend sh -c "chown -R nodejs:nodejs /app/data && chmod -R 775 /app/data"
-
-# Restart backend
-docker-compose restart backend
+# Database is automatically included in the container image!
+# No manual copying needed.
 ```
 
 ---

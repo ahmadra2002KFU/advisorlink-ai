@@ -40,25 +40,7 @@ echo "Waiting for services to start..."
 sleep 10
 
 echo ""
-echo "Copying database..."
-if [ -f backend/mentorlink.db ]; then
-    docker cp backend/mentorlink.db mentorlink-backend:/app/data/mentorlink.db
-    echo "Database copied"
-else
-    echo "Warning: backend/mentorlink.db not found, skipping"
-fi
-
-echo ""
-echo "Setting database permissions..."
-docker-compose exec -u root -T backend sh -c "chown -R nodejs:nodejs /app/data && chmod -R 775 /app/data"
-
-echo ""
-echo "Restarting backend..."
-docker-compose restart backend
-
-echo ""
-echo "Waiting for restart..."
-sleep 5
+echo "Database included in container image - no manual copy needed!"
 
 echo ""
 echo "================================================"
