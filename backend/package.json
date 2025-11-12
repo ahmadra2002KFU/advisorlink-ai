@@ -10,7 +10,15 @@
     "seed": "ts-node scripts/seed-data.ts",
     "verify": "ts-node scripts/verify-setup.ts",
     "migrate": "ts-node scripts/run-migration.ts",
-    "check-schema": "ts-node scripts/check-schema.ts"
+    "check-schema": "ts-node scripts/check-schema.ts",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "migrate:phase3": "ts-node scripts/migrate-phase3.ts",
+    "seed:gpa-history": "ts-node database/seeds/phase3/seed-gpa-history.ts",
+    "seed:attendance-history": "ts-node database/seeds/phase3/seed-attendance-history.ts",
+    "seed:course-catalog": "ts-node database/seeds/phase3/seed-course-catalog.ts",
+    "seed:prerequisites": "ts-node database/seeds/phase3/seed-prerequisites.ts"
   },
   "keywords": [],
   "author": "",
@@ -26,13 +34,17 @@
     "openai": "^6.8.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/better-sqlite3": "^7.6.8",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.0",
+    "jest": "^30.2.0",
     "nodemon": "^3.0.2",
+    "ts-jest": "^29.4.5",
     "ts-node": "^10.9.1",
     "typescript": "^5.3.2"
   }
