@@ -24,5 +24,10 @@ export const chatApi = {
   markAsRead: async (messageId: number) => {
     const { data } = await apiClient.put(`/chat/messages/${messageId}/read`);
     return data;
+  },
+
+  getUnreadCount: async (): Promise<number> => {
+    const { data } = await apiClient.get('/chat/unread-count');
+    return data.count;
   }
 };

@@ -185,3 +185,61 @@ export async function markAsRead(req: Request, res: Response) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export async function getUnreadCount(req: Request, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    const userType = req.user?.userType;
+
+    let count = 0;
+
+    if (userType === 'student') {
+      // Get student's conversations
+      const student = db.prepare(
+        'SELECT id FROM students WHERE user_id = ?'
+      ).get(userId) as any;
+
+      if (!student) {
+        return res.json({ count: 0 });
+      }
+
+      // Count unread messages from advisor in student's conversations
+      const result = db.prepare(
+        `SELECT COUNT(*) as count
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         WHERE c.student_id = ?
+           AND m.sender_id != ?
+           AND m.is_read = FALSE`
+      ).get(student.id, userId) as any;
+
+      count = result?.count || 0;
+    } else if (userType === 'advisor') {
+      // Get advisor's conversations
+      const advisor = db.prepare(
+        'SELECT id FROM advisors WHERE user_id = ?'
+      ).get(userId) as any;
+
+      if (!advisor) {
+        return res.json({ count: 0 });
+      }
+
+      // Count unread messages from students in advisor's conversations
+      const result = db.prepare(
+        `SELECT COUNT(*) as count
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         WHERE c.advisor_id = ?
+           AND m.sender_id != ?
+           AND m.is_read = FALSE`
+      ).get(advisor.id, userId) as any;
+
+      count = result?.count || 0;
+    }
+
+    return res.json({ count });
+  } catch (error) {
+    console.error('Get unread count error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}

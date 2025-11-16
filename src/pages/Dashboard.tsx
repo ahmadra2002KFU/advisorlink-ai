@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
 import AdvisorDashboard from '@/components/dashboard/AdvisorDashboard';
 import AdminDashboard from '@/components/dashboard/AdminDashboard';
+import NotificationBell from '@/components/NotificationBell';
 import { Loader2, Moon, Sun, Languages } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
+import { chatApi } from '@/api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -52,6 +55,22 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
+  // Fetch unread notifications count
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: chatApi.getUnreadCount,
+    enabled: !!user && (user.userType === 'student' || user.userType === 'advisor'),
+    refetchInterval: 10000, // Poll every 10 seconds
+  });
+
+  const handleNotificationClick = () => {
+    if (user.userType === 'student') {
+      navigate('/student-chat');
+    } else if (user.userType === 'advisor') {
+      navigate('/advisor-chat');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -76,6 +95,13 @@ const Dashboard = () => {
             <Button variant="ghost" size="icon" onClick={toggleLanguage}>
               <Languages className="h-5 w-5" />
             </Button>
+            {(user.userType === 'student' || user.userType === 'advisor') && (
+              <NotificationBell
+                unreadCount={unreadCount}
+                onClick={handleNotificationClick}
+                language={language}
+              />
+            )}
             <Button variant="outline" onClick={handleLogout}>
               {t.logout}
             </Button>

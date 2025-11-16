@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
+import NotificationBell from '@/components/NotificationBell';
 import { ArrowLeft, Send, Loader2, Moon, Sun, Languages } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
 import { chatApi } from '@/api';
@@ -12,19 +13,22 @@ import { useAuth } from '@/context/AuthContext';
 
 interface Conversation {
   id: number;
-  studentId: number;
-  studentName: string;
-  lastMessage?: string;
-  lastMessageTime?: string;
+  student_id: string;
+  student_name: string;
+  advisor_id: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
 }
 
 interface Message {
   id: number;
-  content: string;
-  senderId: number;
-  conversationId: number;
-  createdAt: string;
-  isRead: boolean;
+  message_text: string;
+  sender_id: number;
+  conversation_id: number;
+  created_at: string;
+  is_read: number;
+  sender_name: string;
 }
 
 const AdvisorChat = () => {
@@ -71,6 +75,18 @@ const AdvisorChat = () => {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
+  // Fetch unread notifications count
+  const { data: unreadCount = 0 } = useQuery({
+    queryKey: ['unreadCount'],
+    queryFn: chatApi.getUnreadCount,
+    enabled: !!user,
+    refetchInterval: 5000, // Poll every 5 seconds
+  });
+
+  const handleNotificationClick = () => {
+    navigate('/advisor-chat');
+  };
+
   // Fetch conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
     queryKey: ['conversations'],
@@ -111,7 +127,7 @@ const AdvisorChat = () => {
   // Mark messages as read when viewing
   useEffect(() => {
     if (selectedConversation && messages.length > 0) {
-      const unreadMessages = messages.filter((msg: Message) => !msg.isRead && msg.senderId !== user?.id);
+      const unreadMessages = messages.filter((msg: Message) => !msg.is_read && msg.sender_id !== user?.id);
       unreadMessages.forEach((msg: Message) => {
         chatApi.markAsRead(msg.id).catch(console.error);
       });
@@ -142,6 +158,11 @@ const AdvisorChat = () => {
             <Button variant="ghost" size="icon" onClick={toggleLanguage}>
               <Languages className="h-5 w-5" />
             </Button>
+            <NotificationBell
+              unreadCount={unreadCount}
+              onClick={handleNotificationClick}
+              language={language}
+            />
           </div>
         </div>
       </header>
@@ -170,10 +191,8 @@ const AdvisorChat = () => {
                     onClick={() => setSelectedConversation(conv.id)}
                   >
                     <div className="text-start">
-                      <p className="font-semibold">{conv.studentName}</p>
-                      {conv.lastMessage && (
-                        <p className="text-xs opacity-70 truncate">{conv.lastMessage}</p>
-                      )}
+                      <p className="font-semibold">{conv.student_name}</p>
+                      <p className="text-xs opacity-70">{conv.student_id}</p>
                     </div>
                   </Button>
                 ))
@@ -189,19 +208,19 @@ const AdvisorChat = () => {
                     <div
                       key={message.id}
                       className={`flex ${
-                        message.senderId === user?.id ? 'justify-end' : 'justify-start'
+                        message.sender_id === user?.id ? 'justify-end' : 'justify-start'
                       }`}
                     >
                       <div
                         className={`max-w-[80%] rounded-lg p-3 ${
-                          message.senderId === user?.id
+                          message.sender_id === user?.id
                             ? 'bg-primary text-primary-foreground'
                             : 'bg-secondary text-secondary-foreground'
                         }`}
                       >
-                        <p className="whitespace-pre-wrap">{message.content}</p>
+                          <p className="whitespace-pre-wrap">{message.message_text}</p>
                         <p className="text-xs opacity-70 mt-1">
-                          {new Date(message.createdAt).toLocaleTimeString()}
+                          {new Date(message.created_at.replace(' ', 'T')).toLocaleTimeString()}
                         </p>
                       </div>
                     </div>

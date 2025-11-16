@@ -96,7 +96,7 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
             <Button
               variant="secondary"
               className="w-full"
-              onClick={() => navigate('/advisor-chat')}
+              onClick={() => navigate('/student-chat')}
             >
               {t.contactAdvisor}
             </Button>
@@ -114,7 +114,7 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
             <CardDescription>View your chat history</CardDescription>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" className="w-full" onClick={() => navigate('/chat')}>{t.viewChats}</Button>
+            <Button variant="outline" className="w-full" onClick={() => navigate('/student-chat')}>{t.viewChats}</Button>
           </CardContent>
         </Card>
       </div>
@@ -212,7 +212,7 @@ const StudentDashboard = ({ user, language }: StudentDashboardProps) => {
                   <Button
                     className="w-full"
                     variant="outline"
-                    onClick={() => navigate('/advisor-chat')}
+                    onClick={() => navigate('/student-chat')}
                   >
                     {t.contactAdvisor}
                   </Button>

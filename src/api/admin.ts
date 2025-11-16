@@ -1,5 +1,44 @@
 import apiClient from './client';
 
+export interface Student {
+  id: number;
+  user_id: number;
+  student_id: string;
+  email: string;
+  full_name: string;
+  birthdate: string;
+  level_name: string;
+  level_number: number;
+  section_name: string;
+  gpa: number;
+  attendance_percentage: number;
+  has_advisor: number;
+  created_at: string;
+}
+
+export interface CreateStudentData {
+  email: string;
+  password: string;
+  fullName: string;
+  studentId: string;
+  birthdate: string;
+  levelId: number;
+  sectionId: number;
+  gpa?: number;
+  attendancePercentage?: number;
+}
+
+export interface UpdateStudentData {
+  email?: string;
+  fullName?: string;
+  studentIdNumber?: string;
+  birthdate?: string;
+  levelId?: number;
+  sectionId?: number;
+  gpa?: number;
+  attendancePercentage?: number;
+}
+
 export const adminApi = {
   getStats: async () => {
     const { data } = await apiClient.get('/admin/stats');
@@ -33,6 +72,32 @@ export const adminApi = {
 
   deleteFAQ: async (faqId: number) => {
     const { data } = await apiClient.delete(`/admin/faqs/${faqId}`);
+    return data;
+  },
+
+  // Student CRUD operations
+  getAllStudents: async (): Promise<Student[]> => {
+    const { data } = await apiClient.get('/admin/students');
+    return data;
+  },
+
+  getStudent: async (studentId: number): Promise<Student> => {
+    const { data } = await apiClient.get(`/admin/students/${studentId}`);
+    return data;
+  },
+
+  createStudent: async (studentData: CreateStudentData): Promise<Student> => {
+    const { data } = await apiClient.post('/admin/students', studentData);
+    return data;
+  },
+
+  updateStudent: async (studentId: number, studentData: UpdateStudentData): Promise<Student> => {
+    const { data } = await apiClient.put(`/admin/students/${studentId}`, studentData);
+    return data;
+  },
+
+  deleteStudent: async (studentId: number) => {
+    const { data } = await apiClient.delete(`/admin/students/${studentId}`);
     return data;
   }
 };

@@ -4,7 +4,8 @@ import {
   getMessages,
   sendMessage,
   createConversation,
-  markAsRead
+  markAsRead,
+  getUnreadCount
 } from '../controllers/chatController';
 import { authenticateToken, requireRole } from '../middleware/auth';
 
@@ -15,5 +16,6 @@ router.post('/conversations', authenticateToken, requireRole('student'), createC
 router.get('/conversations/:conversationId/messages', authenticateToken, getMessages);
 router.post('/conversations/:conversationId/messages', authenticateToken, sendMessage);
 router.put('/messages/:messageId/read', authenticateToken, markAsRead);
+router.get('/unread-count', authenticateToken, getUnreadCount);
 
 export default router;

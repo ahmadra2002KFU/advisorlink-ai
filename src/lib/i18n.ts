@@ -18,6 +18,8 @@ export const translations = {
     myStudents: "My Students",
     totalUsers: "Total Users",
     totalChats: "Total Chats",
+    notifications: "Notifications",
+    unreadMessages: "unread messages",
   },
   ar: {
     welcomeBack: "مرحباً بعودتك",
@@ -38,6 +40,8 @@ export const translations = {
     myStudents: "طلابي",
     totalUsers: "إجمالي المستخدمين",
     totalChats: "إجمالي المحادثات",
+    notifications: "الإشعارات",
+    unreadMessages: "رسائل غير مقروءة",
   }
 };
 

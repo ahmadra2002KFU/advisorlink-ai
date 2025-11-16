@@ -9,6 +9,7 @@ import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import FAQManager from '@/components/admin/FAQManager';
 import ConversationViewer from '@/components/admin/ConversationViewer';
 import UserTable from '@/components/admin/UserTable';
+import StudentManager from '@/components/admin/StudentManager';
 
 const AdminPanel = () => {
   const navigate = useNavigate();
@@ -90,9 +91,12 @@ const AdminPanel = () => {
 
       <main className="container mx-auto px-4 py-6">
         <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">
               {language === 'en' ? 'Dashboard' : 'لوحة التحكم'}
+            </TabsTrigger>
+            <TabsTrigger value="students">
+              {language === 'en' ? 'Students' : 'الطلاب'}
             </TabsTrigger>
             <TabsTrigger value="faqs">
               {language === 'en' ? 'FAQs' : 'الأسئلة الشائعة'}
@@ -107,6 +111,10 @@ const AdminPanel = () => {
 
           <TabsContent value="dashboard">
             <AdminDashboard user={user} language={language} />
+          </TabsContent>
+
+          <TabsContent value="students">
+            <StudentManager />
           </TabsContent>
 
           <TabsContent value="faqs">

@@ -7,7 +7,9 @@
       "Bash(test:*)",
       "Bash(nul)",
       "Bash(cat:*)",
-      "Bash(mkdir:*)"
+      "Bash(mkdir:*)",
+      "Bash(sqlite3:*)",
+      "Bash(node -e:*)"
     ],
     "deny": [],
     "ask": []
