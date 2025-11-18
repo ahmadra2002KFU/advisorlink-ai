@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/NotificationBell';
 import { ArrowLeft, Send, Loader2, Moon, Sun, Languages, MessageCircle, AlertCircle } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
-import { chatApi } from '@/api';
+import { chatApi, UnreadMessage } from '@/api';
 import { useAuth } from '@/context/AuthContext';
 
 interface Message {
@@ -77,16 +77,18 @@ const StudentChat = () => {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
-  // Fetch unread notifications count
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['unreadCount'],
-    queryFn: chatApi.getUnreadCount,
+  // Fetch unread messages
+  const { data: unreadMessages = [] } = useQuery<UnreadMessage[]>({
+    queryKey: ['unreadMessages'],
+    queryFn: chatApi.getUnreadMessages,
     enabled: !!user && user.userType === 'student',
     refetchInterval: 5000, // Poll every 5 seconds
   });
 
-  const handleNotificationClick = () => {
-    navigate('/student-chat');
+  const handleNotificationClick = (conversationId: number) => {
+    // Students only have one conversation, so we just ensure we're showing it
+    setConversationId(conversationId);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Fetch or create conversation
@@ -213,9 +215,11 @@ const StudentChat = () => {
               <Languages className="h-5 w-5" />
             </Button>
             <NotificationBell
-              unreadCount={unreadCount}
-              onClick={handleNotificationClick}
+              unreadMessages={unreadMessages}
+              onNotificationClick={handleNotificationClick}
               language={language}
+              noNotificationsText={t.noNewNotifications}
+              viewAllText={t.viewAllMessages}
             />
           </div>
         </div>

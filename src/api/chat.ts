@@ -1,5 +1,15 @@
 import apiClient from './client';
 
+export interface UnreadMessage {
+  id: number;
+  message_text: string;
+  sender_id: number;
+  sender_name: string;
+  conversation_id: number;
+  created_at: string;
+  student_number?: string;
+}
+
 export const chatApi = {
   getConversations: async () => {
     const { data } = await apiClient.get('/chat/conversations');
@@ -29,5 +39,10 @@ export const chatApi = {
   getUnreadCount: async (): Promise<number> => {
     const { data } = await apiClient.get('/chat/unread-count');
     return data.count;
+  },
+
+  getUnreadMessages: async (): Promise<UnreadMessage[]> => {
+    const { data } = await apiClient.get('/chat/unread-messages');
+    return data;
   }
 };

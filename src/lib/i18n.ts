@@ -20,6 +20,8 @@ export const translations = {
     totalChats: "Total Chats",
     notifications: "Notifications",
     unreadMessages: "unread messages",
+    noNewNotifications: "No new notifications",
+    viewAllMessages: "View all messages",
   },
   ar: {
     welcomeBack: "مرحباً بعودتك",
@@ -42,6 +44,8 @@ export const translations = {
     totalChats: "إجمالي المحادثات",
     notifications: "الإشعارات",
     unreadMessages: "رسائل غير مقروءة",
+    noNewNotifications: "لا توجد إشعارات جديدة",
+    viewAllMessages: "عرض جميع الرسائل",
   }
 };
 

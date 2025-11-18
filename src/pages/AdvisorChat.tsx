@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import NotificationBell from '@/components/NotificationBell';
 import { ArrowLeft, Send, Loader2, Moon, Sun, Languages } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
-import { chatApi } from '@/api';
+import { chatApi, UnreadMessage } from '@/api';
 import { useAuth } from '@/context/AuthContext';
 
 interface Conversation {
@@ -33,6 +33,7 @@ interface Message {
 
 const AdvisorChat = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -55,6 +56,17 @@ const AdvisorChat = () => {
     document.documentElement.dir = savedLang === 'ar' ? 'rtl' : 'ltr';
   }, []);
 
+  // Handle URL parameter for conversation selection
+  useEffect(() => {
+    const conversationParam = searchParams.get('conversation');
+    if (conversationParam) {
+      const conversationId = parseInt(conversationParam, 10);
+      if (!isNaN(conversationId)) {
+        setSelectedConversation(conversationId);
+      }
+    }
+  }, [searchParams]);
+
   // Redirect if not authenticated
   useEffect(() => {
     if (!user) {
@@ -75,16 +87,17 @@ const AdvisorChat = () => {
     document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr';
   };
 
-  // Fetch unread notifications count
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['unreadCount'],
-    queryFn: chatApi.getUnreadCount,
+  // Fetch unread messages
+  const { data: unreadMessages = [] } = useQuery<UnreadMessage[]>({
+    queryKey: ['unreadMessages'],
+    queryFn: chatApi.getUnreadMessages,
     enabled: !!user,
     refetchInterval: 5000, // Poll every 5 seconds
   });
 
-  const handleNotificationClick = () => {
-    navigate('/advisor-chat');
+  const handleNotificationClick = (conversationId: number) => {
+    setSelectedConversation(conversationId);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   // Fetch conversations
@@ -159,9 +172,11 @@ const AdvisorChat = () => {
               <Languages className="h-5 w-5" />
             </Button>
             <NotificationBell
-              unreadCount={unreadCount}
-              onClick={handleNotificationClick}
+              unreadMessages={unreadMessages}
+              onNotificationClick={handleNotificationClick}
               language={language}
+              noNotificationsText={t.noNewNotifications}
+              viewAllText={t.viewAllMessages}
             />
           </div>
         </div>

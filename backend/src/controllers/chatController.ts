@@ -243,3 +243,77 @@ export async function getUnreadCount(req: Request, res: Response) {
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export async function getUnreadMessages(req: Request, res: Response) {
+  try {
+    const userId = req.user?.userId;
+    const userType = req.user?.userType;
+
+    let messages = [];
+
+    if (userType === 'student') {
+      // Get student's conversations
+      const student = db.prepare(
+        'SELECT id FROM students WHERE user_id = ?'
+      ).get(userId) as any;
+
+      if (!student) {
+        return res.json([]);
+      }
+
+      // Get unread messages from advisor in student's conversations
+      messages = db.prepare(
+        `SELECT
+          m.id,
+          m.message_text,
+          m.sender_id,
+          m.conversation_id,
+          m.created_at,
+          u.full_name as sender_name
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         JOIN users u ON m.sender_id = u.id
+         WHERE c.student_id = ?
+           AND m.sender_id != ?
+           AND m.is_read = FALSE
+         ORDER BY m.created_at DESC
+         LIMIT 5`
+      ).all(student.id, userId) as any[];
+    } else if (userType === 'advisor') {
+      // Get advisor's conversations
+      const advisor = db.prepare(
+        'SELECT id FROM advisors WHERE user_id = ?'
+      ).get(userId) as any;
+
+      if (!advisor) {
+        return res.json([]);
+      }
+
+      // Get unread messages from students in advisor's conversations
+      messages = db.prepare(
+        `SELECT
+          m.id,
+          m.message_text,
+          m.sender_id,
+          m.conversation_id,
+          m.created_at,
+          u.full_name as sender_name,
+          s.student_id as student_number
+         FROM messages m
+         JOIN conversations c ON m.conversation_id = c.id
+         JOIN users u ON m.sender_id = u.id
+         JOIN students s ON c.student_id = s.id
+         WHERE c.advisor_id = ?
+           AND m.sender_id != ?
+           AND m.is_read = FALSE
+         ORDER BY m.created_at DESC
+         LIMIT 5`
+      ).all(advisor.id, userId) as any[];
+    }
+
+    return res.json(messages);
+  } catch (error) {
+    console.error('Get unread messages error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}

@@ -9,7 +9,7 @@ import AdminDashboard from '@/components/dashboard/AdminDashboard';
 import NotificationBell from '@/components/NotificationBell';
 import { Loader2, Moon, Sun, Languages } from 'lucide-react';
 import { translations, Language } from '@/lib/i18n';
-import { chatApi } from '@/api';
+import { chatApi, UnreadMessage } from '@/api';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -55,19 +55,19 @@ const Dashboard = () => {
     navigate('/auth');
   };
 
-  // Fetch unread notifications count
-  const { data: unreadCount = 0 } = useQuery({
-    queryKey: ['unreadCount'],
-    queryFn: chatApi.getUnreadCount,
+  // Fetch unread messages
+  const { data: unreadMessages = [] } = useQuery<UnreadMessage[]>({
+    queryKey: ['unreadMessages'],
+    queryFn: chatApi.getUnreadMessages,
     enabled: !!user && (user.userType === 'student' || user.userType === 'advisor'),
     refetchInterval: 10000, // Poll every 10 seconds
   });
 
-  const handleNotificationClick = () => {
+  const handleNotificationClick = (conversationId: number) => {
     if (user.userType === 'student') {
       navigate('/student-chat');
     } else if (user.userType === 'advisor') {
-      navigate('/advisor-chat');
+      navigate(`/advisor-chat?conversation=${conversationId}`);
     }
   };
 
@@ -97,9 +97,11 @@ const Dashboard = () => {
             </Button>
             {(user.userType === 'student' || user.userType === 'advisor') && (
               <NotificationBell
-                unreadCount={unreadCount}
-                onClick={handleNotificationClick}
+                unreadMessages={unreadMessages}
+                onNotificationClick={handleNotificationClick}
                 language={language}
+                noNotificationsText={t.noNewNotifications}
+                viewAllText={t.viewAllMessages}
               />
             )}
             <Button variant="outline" onClick={handleLogout}>
